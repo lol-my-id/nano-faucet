@@ -2,7 +2,10 @@
 import { Link } from 'waku';
 import React, { useState } from 'react';
 
-import { AccountBalanceWallet, Home, WaterDrop, People } from '@mui/icons-material';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import HomeIcon from '@mui/icons-material/Home';
+import WaterDropIcon from '@mui/icons-material/WaterDrop';
+import PeopleIcon from '@mui/icons-material/People';
 
 export const Navigation = () => {
     const [activeTab, setActiveTab] = useState('home');
@@ -13,7 +16,7 @@ export const Navigation = () => {
         className={`join-item btn ${activeTab === 'home' ? 'btn-active' : ''}`}
         onClick={() => setActiveTab('home')}
         >
-        <Home className="mr-2" />
+        <HomeIcon className="mr-2" />
         Home
         </button>
         
@@ -21,7 +24,7 @@ export const Navigation = () => {
         className={`join-item btn ${activeTab === 'faucet' ? 'btn-active' : ''}`}
         onClick={() => setActiveTab('faucet')}
         >
-        {/* <WaterDrop className="mr-2" /> */}
+        <WaterDropIcon className="mr-2" />
         Faucet
         </button>
         
@@ -29,7 +32,7 @@ export const Navigation = () => {
         className={`join-item btn ${activeTab === 'referrals' ? 'btn-active' : ''}`}
         onClick={() => setActiveTab('referrals')}
         >
-        {/* <People className="mr-2" /> */}
+        <PeopleIcon className="mr-2" />
         Referrals
         </button>
 
@@ -39,7 +42,7 @@ export const Navigation = () => {
             className="btn btn-primary rounded-full"
             onClick={() => alert('Connect wallet clicked!')}
         >
-            {/* <AccountBalanceWallet className="mr-2" /> */}
+            <AccountBalanceWalletIcon className="mr-2" />
             Connect Wallet
         </button>
         </div>
