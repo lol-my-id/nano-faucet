@@ -2,10 +2,8 @@
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-  ssr: {
-    noExternal: ['@mui/icons-material'],
-  },
-  optimizeDeps: {
-    include: ['@mui/icons-material'],
-  },
+  ssr: {noExternal: ["@mui/material", "@mui/utils", "@mui/base", "@mui/icons-material"]},
+  // optimizeDeps: {
+  //   include: ['@mui/icons-material'],
+  // },
 })
