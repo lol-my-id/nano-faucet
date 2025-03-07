@@ -1,16 +1,8 @@
-// import { useState } from 'react';
-// import { AccountBalanceWallet, Home, WaterDrop, People } from '@mui/icons-material';
+"use client"
+import { Layout } from "../components/Layout";
 
 export default function HomePage() {
   return (
-    <div>
-      
-    </div>
+    <Layout />
   );
 }
-
-export const getConfig = async () => {
-  return {
-    render: 'static',
-  } as const;
-};
