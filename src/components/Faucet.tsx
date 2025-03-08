@@ -13,6 +13,7 @@ import { addressAtom, currencyAtom } from '../contexts/Provider';
 import { useAtom } from 'jotai';
 
 export default function FaucetPage() {
+    const raffleRef = useRef<{ isRolling: () => boolean, roll: () => void } | null>(null);
     const [isRolling, setIsRolling] = useState(false);
 
     // Doesn't feel right to do it this way
@@ -24,15 +25,17 @@ export default function FaucetPage() {
     const captchaRef = useRef<HCaptcha>(null);
 
     const handleRoll = (token?: string) => {
-        if (!token || typeof token !== 'string' || token.length === 0) {
-            captchaRef.current?.execute();
-            return;
-        }
+        // if (!token || typeof token !== 'string' || token.length === 0) {
+        //     captchaRef.current?.execute();
+        //     return;
+        // }
 
-        if(isRolling) return;
-        setIsRolling(true);
+        if(!raffleRef.current) return;
+
+        if(raffleRef.current.isRolling()) return;
+        raffleRef.current.roll();
         
-        useFaucet(address ?? "", token, refLink).then((data) => {
+        useFaucet(address ?? "", token ?? "", refLink).then((data) => {
             setIsRolling(false);
             cToast.success(`You won ${data.prize} ${currency}`);
         }).catch((data: string) => {
@@ -57,7 +60,7 @@ export default function FaucetPage() {
         <div className="flex flex-col gap-8 animate-fade-in">
         {/* Main Roll Section */}
         <div className="hero bg-base-100 rounded-xl overflow-x-auto p-6">
-            <div className="hero-content text-center flex flex-col gap-6">
+            <div className="hero-content text-center w-full flex flex-col gap-6">
             <h2 className="text-4xl font-bold">
                 <span className="text-primary">Faucet</span>
                 <div className="text-lg mt-2 opacity-70">
@@ -66,7 +69,7 @@ export default function FaucetPage() {
             </h2>
 
             {/* Rolling Animation */}
-            <RaffleRoller targetIndex={40} duration={1000} cards={["images/favicon.png","images/favicon.png","images/favicon.png"]} />
+            <RaffleRoller ref={raffleRef} targetIndex={40} duration={1000} cards={["images/favicon.png","images/favicon.png","images/favicon.png"]} />
 
             {/* Captcha & Roll Button */}
             <div className="flex flex-col gap-4 w-full max-w-md">
