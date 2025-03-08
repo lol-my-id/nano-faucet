@@ -6,7 +6,7 @@ import HCaptcha from "@hcaptcha/react-hcaptcha";
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 
 import { useEffect, useRef, useState } from "react";
-import { claimReferral, getReferralData } from "../modules/api";
+import { claimReferral } from "../modules/api";
 import { cToast } from "./Toast";
 import { useAtom } from "jotai";
 import { addressAtom, currencyAtom, referralDataAtom } from "../contexts/Provider";
@@ -50,7 +50,14 @@ const Referrals: React.FC = () => {
         });
     }
 
+    const referralDataRef = useRef<boolean>(false);
     useEffect(() => {
+        console.log(referralData)
+        if(!referralDataRef.current) {
+            referralDataRef.current = true;
+            return;
+        }
+
         // Fetch referral data
         if(!referralData) {
             cToast.error("Failed to fetch referral data");
@@ -63,7 +70,7 @@ const Referrals: React.FC = () => {
             totalEarned: referralData.earnings,
             availableToClaim: referralData.claim
         });
-    }, []);
+    }, [referralData]);
 
     return (
         <div className="flex flex-col gap-8">
@@ -86,6 +93,7 @@ const Referrals: React.FC = () => {
             type="text"
             placeholder="Referral code should appear here"
             readOnly
+            value={referralDataTemp.url}
             className="input input-bordered w-full"
             onClick={(e) => e.currentTarget.select()}
             />
@@ -99,13 +107,13 @@ const Referrals: React.FC = () => {
                 <div className="stats shadow bg-base-100">
                     <div className="stat">
                         <div className="stat-title">Total earned</div>
-                        <div className="stat-value">{referralDataTemp.totalEarned}<small className="text-base">{currency}</small></div>
+                        <div className="stat-value lg:text-2xl md:text-4xl">{parseFloat(referralDataTemp.totalEarned.toFixed(6))}<small className="text-base">{currency}</small></div>
                     </div>
                 </div>
                 <div className="stats shadow bg-base-100">
                     <div className="stat">
                         <div className="stat-title">Available to claim</div>
-                        <div className="stat-value">{referralDataTemp.availableToClaim}<small className="text-base">{currency}</small></div>
+                        <div className="stat-value lg:text-2xl md:text-4xl">{parseFloat(referralDataTemp.availableToClaim.toFixed(6))}<small className="text-base">{currency}</small></div>
                     </div>
                 </div>
                 <div className="stats shadow bg-base-100">
