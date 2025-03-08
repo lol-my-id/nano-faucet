@@ -22,3 +22,9 @@ export default async function RootLayout({ children }: RootLayoutProps) {
     </>
   )
 }
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  } as const;
+};
