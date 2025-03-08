@@ -1,21 +1,22 @@
 // CardRoller.tsx
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useImperativeHandle } from 'react';
 
 interface CardRollerProps {
-  cards: string[];
-  targetIndex?: number;
-  duration?: number;
+    ref: React.RefObject<any>;
+    cards: string[];
+    targetIndex?: number;
+    duration?: number;
 }
 
 const CARD_WIDTH = 120;
 const CARD_HEIGHT = 120;
 const MARGIN = 10;
 const SPACING = CARD_WIDTH + MARGIN;
-const DIVIDER_WIDTH = 5;
 
 const CardRoller: React.FC<CardRollerProps> = ({ 
   cards, 
   targetIndex,
+  ref,
   duration = 8000 
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -26,6 +27,16 @@ const CardRoller: React.FC<CardRollerProps> = ({
   const currentPosition = useRef<number>(0);
   const velocity = useRef<number>(0);
   const targetPosition = useRef<number>(0);
+
+    // Expose a method to the parent component
+  useImperativeHandle(ref, () => ({
+    roll: () => {
+        startRoll();
+    },
+    isRolling: () => {
+        return isRolling;
+    }
+  }));
 
   // Load images
   useEffect(() => {
@@ -82,16 +93,18 @@ const CardRoller: React.FC<CardRollerProps> = ({
       if (x > ctx.canvas.width) break;
       if (x + CARD_WIDTH < 0) continue;
 
+      const chosenOne = i === targetIndex;
+
       ctx.save();
       ctx.translate(x, 0);
-      drawCard(ctx, loadedImages[idx]);
+      drawCard(ctx, loadedImages[idx], chosenOne);
       ctx.restore();
     }
   }, [loadedImages, cards.length]);
 
-  const drawCard = (ctx: CanvasRenderingContext2D, img?: HTMLImageElement) => {
+  const drawCard = (ctx: CanvasRenderingContext2D, img?: HTMLImageElement, chosenOne = false) => {
     // Card background
-    ctx.fillStyle = '#14202b';
+    ctx.fillStyle = chosenOne ? '#ffffff' : '#14202b';
     ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
     
     // Card image
@@ -163,20 +176,13 @@ const CardRoller: React.FC<CardRollerProps> = ({
   }, []);
 
   return (
-    <div className="relative w-full h-64">
+    <div className="relative w-full h-30">
         {/* Enhanced vertical divider */}
       <div className="absolute left-1/2 h-full w-1 bg-[#d16266] z-[9998] shadow-xl" />
       <canvas 
         ref={canvasRef}
         className="w-full h-full"
       />
-      <button
-        onClick={startRoll}
-        disabled={isRolling || loadedImages.length !== cards.length}
-        className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-red-500 text-white px-6 py-2 rounded disabled:opacity-50"
-      >
-        {isRolling ? 'Rolling...' : 'Start Roll'}
-      </button>
     </div>
   );
 };
