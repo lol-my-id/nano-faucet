@@ -1,15 +1,15 @@
 "use client"
 
 import { FaucetResponse, NextRollData, ReferralData } from "../types/api";
+const API_URL = process.env.WAKU_PUBLIC_API_URL;
 
-const API_URL = process.env.WAKU_PUBLIC_API_URL || "http://localhost:3000/api";
-
-function invoke(method: string, endpoint: string, body?: any) {
+function invoke(method: string, endpoint: string, body?: any, headers?: any): Promise<Response> {
     console.log("invoked", method, endpoint, body);
     return fetch(`${API_URL}/${endpoint}`, {
         method,
         headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            ...(headers ?? {})
         },
         body: method != "GET" ? JSON.stringify(body) : null
     });
@@ -17,7 +17,7 @@ function invoke(method: string, endpoint: string, body?: any) {
 
 export function useFaucet(address: string, captcha: string, referral?: string): Promise<FaucetResponse> {
     return new Promise((resolve, reject) => {
-        invoke('POST', `faucet/${address}`, { hc: captcha, ref: referral }).then(r => {
+        invoke('GET', `faucet/${address}`, {}, { hc: captcha, ref: referral }).then(r => {
             if(r.ok) {
                 r.json().then(data => resolve(data as FaucetResponse));
                 return;
