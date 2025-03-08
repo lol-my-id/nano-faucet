@@ -50,7 +50,7 @@ export default function HomePage() {
           <div className="hero-content text-center">
             <div className="max-w-4xl">
               <h1 className="text-5xl font-bold pt-2">
-                <span className="text-primary">nano.lol.my.id</span>
+                <span className="text-primary">{process.env.WAKU_PUBLIC_DOMAIN ?? "NANO Faucet"}</span>
                 <div className="text-xl mt-2 opacity-70">
                   Earn XNO, XDG, and BAN instantly!
                 </div>
