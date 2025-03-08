@@ -3,7 +3,7 @@ import { atom, useAtom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 import { useEffect } from 'react';
 import { NextRollData, ReferralData } from '../types/api';
-import { ADDRESS_STORAGE_NAME, getCurrencyFromAddress } from '../modules/utils';
+import { ADDRESS_STORAGE_NAME, getCurrencyFromAddress, validateNanoAddress } from '../modules/utils';
 import { getNextRollData, getReferralData } from '../modules/api';
 
 // Atom to store address from localStorage
@@ -27,10 +27,10 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
 
     useEffect(() => {
         const initializeData = () => {
-            if (address && address.length > 0) {
+            if (address && address.length > 0 && validateNanoAddress(address)) {
                 // Fetch referral data and next roll data, not async for better code readability
-                getReferralData(address).then(setReferralData).catch(() => setReferralData(null));
-                getNextRollData(address).then(setNextRoll).catch(() => setNextRoll(null));
+                getReferralData(address).then(setReferralData).catch(()=>{});
+                getNextRollData(address).then(setNextRoll).catch(() => {});
                 setCurrency(getCurrencyFromAddress(address));
             }
         };
