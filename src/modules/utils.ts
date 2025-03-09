@@ -4,6 +4,7 @@ import isValid from 'nano-address-validator';
 export const PROTECTED_TABS = ["faucet", "referrals"]
 export const ADDRESS_STORAGE_NAME = "address";
 
+export const referralLink = (id: string) => `https://${process.env.WAKU_PUBLIC_DOMAIN}/r/${id}`;
 export const convertIntoNanoAddress = (address: string) => `nano_${address.split("_")?.[1]}`;
 export const validateNanoAddress = (address: string) => isValid(convertIntoNanoAddress(address));
 export const getCurrencyFromAddress = (address: string): string => {
