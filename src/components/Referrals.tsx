@@ -10,25 +10,14 @@ import { claimReferral } from "../modules/api";
 import { cToast } from "./Toast";
 import { useAtom } from "jotai";
 import { addressAtom, currencyAtom, referralDataAtom } from "../contexts/Provider";
-
-interface ReferralSystemData {
-    url: string;
-    usersReferred: number;
-    totalEarned: number;
-    availableToClaim: number;
-}
+import { ReferralSystemData } from "../types/api";
+import { referralLink } from "../modules/utils";
 
 const Referrals: React.FC = () => {
     const [isClaiming, setIsClaiming] = useState(false);
     const [[currency], [address]] = [useAtom(currencyAtom), useAtom(addressAtom)];
 
     const [referralData] = useAtom(referralDataAtom);
-    const [referralDataTemp, setReferralData] = useState<ReferralSystemData>({
-        url: "",
-        usersReferred: 0,
-        totalEarned: 0,
-        availableToClaim: 0
-    });
 
     const captchaRef = useRef<HCaptcha>(null);
     
@@ -50,27 +39,6 @@ const Referrals: React.FC = () => {
         });
     }
 
-    const referralDataRef = useRef<boolean>(false);
-    useEffect(() => {
-        console.log(referralData)
-        if(!referralDataRef.current) {
-            referralDataRef.current = true;
-            return;
-        }
-
-        // Fetch referral data
-        if(!referralData) {
-            cToast.error("Failed to fetch referral data");
-            return;
-        }
-
-        setReferralData({
-            url: referralData.link,
-            usersReferred: referralData.total,
-            totalEarned: referralData.earnings,
-            availableToClaim: referralData.claim
-        });
-    }, [referralData]);
 
     return (
         <div className="flex flex-col gap-8">
@@ -89,11 +57,11 @@ const Referrals: React.FC = () => {
             </div>
   
             {/* Main Content */}
-            <input
+            {referralData && <><input
             type="text"
             placeholder="Referral code should appear here"
             readOnly
-            value={referralDataTemp.url}
+            value={referralLink(referralData.url)}
             className="input input-bordered w-full"
             onClick={(e) => e.currentTarget.select()}
             />
@@ -101,19 +69,19 @@ const Referrals: React.FC = () => {
                 <div className="stats shadow bg-base-100">
                     <div className="stat">
                         <div className="stat-title">Users referred</div>
-                        <div className="stat-value">{referralDataTemp.usersReferred}</div>
+                        <div className="stat-value">{referralData.usersReferred}</div>
                     </div>
                 </div>
                 <div className="stats shadow bg-base-100">
                     <div className="stat">
                         <div className="stat-title">Total earned</div>
-                        <div className="stat-value lg:text-2xl md:text-4xl">{parseFloat(referralDataTemp.totalEarned.toFixed(6))}<small className="text-base">{currency}</small></div>
+                        <div className="stat-value lg:text-2xl md:text-4xl">{parseFloat(referralData.totalEarned.toFixed(6))}<small className="text-base">{currency}</small></div>
                     </div>
                 </div>
                 <div className="stats shadow bg-base-100">
                     <div className="stat">
                         <div className="stat-title">Available to claim</div>
-                        <div className="stat-value lg:text-2xl md:text-4xl">{parseFloat(referralDataTemp.availableToClaim.toFixed(6))}<small className="text-base">{currency}</small></div>
+                        <div className="stat-value lg:text-2xl md:text-4xl">{parseFloat(referralData.availableToClaim.toFixed(6))}<small className="text-base">{currency}</small></div>
                     </div>
                 </div>
                 <div className="stats shadow bg-base-100">
@@ -126,13 +94,13 @@ const Referrals: React.FC = () => {
             <HCaptchaComponent onVerify={handleReferralClaim} captchaRef={captchaRef} />
             <div className="flex flex-col gap-4 mx-auto w-full max-w-md">
                 <button 
-                className={`btn gap-2 text-lg transition-transform btn-primary hover:scale-105 ${(isClaiming || referralDataTemp.availableToClaim == 0) ? 'btn-disabled' : ''}`}
+                className={`btn gap-2 text-lg transition-transform btn-primary hover:scale-105 ${(isClaiming || referralData.availableToClaim == 0) ? 'btn-disabled' : ''}`}
                 onClick={()=>handleReferralClaim()}
                 >
                 <MonetizationOnIcon className={`${isClaiming ? 'loading  loading-infinity loading-lg' : ''}`} />
                 {isClaiming ? "Claiming" : "Claim"}
                 </button>
-            </div>
+            </div></>}
             <small className="w-full text-center stat-title">If you claimed referral earnings during getnano.ovh downtime, contact me on Discord: nx2</small>
         </div>
     );
