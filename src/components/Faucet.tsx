@@ -9,26 +9,25 @@ import { formatTime } from '../modules/utils';
 import { cToast } from './Toast';
 import RaffleRoller from './RaffleRoller';
 import Card from './Card';
-import { addressAtom, currencyAtom } from '../contexts/Provider';
+import { addressAtom, currencyAtom, nextRollAtom } from '../contexts/Provider';
 import { useAtom } from 'jotai';
 
 export default function FaucetPage() {
-    const raffleRef = useRef<{ isRolling: () => boolean, roll: () => void } | null>(null);
-    const [isRolling, setIsRolling] = useState(false);
-
     // Doesn't feel right to do it this way
     const [[currency], [address]] = [useAtom(currencyAtom), useAtom(addressAtom)];
+    const [nextRoll] = useAtom(nextRollAtom);
 
+    const raffleRef = useRef<{ isRolling: () => boolean, roll: () => void } | null>(null);
+    const [isRolling, setIsRolling] = useState(false);
+    const [nextRollDisplay, setNextRollDisplay] = useState(0);
     const [refLink, setRefLink] = useState("");
-    const [nextRoll, setNextRoll] = useState(45 * 60); // 45 minutes in seconds
-
     const captchaRef = useRef<HCaptcha>(null);
 
     const handleRoll = (token?: string) => {
-        // if (!token || typeof token !== 'string' || token.length === 0) {
-        //     captchaRef.current?.execute();
-        //     return;
-        // }
+        if (!token || typeof token !== 'string' || token.length === 0) {
+            captchaRef.current?.execute();
+            return;
+        }
 
         if(!raffleRef.current) return;
 
@@ -44,18 +43,37 @@ export default function FaucetPage() {
         });
     };
 
-    // Countdown timer
     useEffect(() => {
-        const lRefLink = sessionStorage.getItem("ref");
+        const lRefLink = localStorage.getItem("ref");
         if (lRefLink) setRefLink(lRefLink);
-
-        // TODO: get data from API
-        const timer = setInterval(() => {
-            setNextRoll(prev => (prev > 0 ? prev - 1 : 45 * 60));
-        }, 1000);
-        return () => clearInterval(timer);
     }, []);
 
+    // Countdown timer
+    useEffect(() => {
+        if (!nextRoll) return;
+
+        const now = new Date().getTime();
+        const last = new Date(nextRoll.lastDate).getTime();
+
+        const diff = now - last;
+        const nextRollTime = nextRoll.claimTimeout - Math.floor(diff/1000);
+
+        setNextRollDisplay(nextRollTime);
+
+        const timer = setInterval(() => {
+            setNextRollDisplay(prev => {
+                if (prev <= 0) {
+                    clearInterval(timer);
+                    return 45 * 60; // Reset to 45 minutes if needed
+                }
+                return prev - 1;
+            });
+        }, 1000);
+    
+        // Cleanup function to clear the interval
+        return () => clearInterval(timer);
+    }, [nextRoll]); // Add nextRollDisplay to the dependency array
+    
     return (
         <div className="flex flex-col gap-8 animate-fade-in">
         {/* Main Roll Section */}
@@ -63,9 +81,9 @@ export default function FaucetPage() {
             <div className="hero-content text-center w-full flex flex-col gap-6">
             <h2 className="text-4xl font-bold">
                 <span className="text-primary">Faucet</span>
-                <div className="text-lg mt-2 opacity-70">
-                Spin every 45 minutes - Next spin in: {formatTime(nextRoll)}
-                </div>
+                {nextRoll && <div className="text-lg mt-2 opacity-70">
+                Spin every 45 minutes - Next spin in: {nextRollDisplay > 0 ? formatTime(nextRollDisplay) : "Available"}
+                </div>}
             </h2>
 
             {/* Rolling Animation */}
@@ -77,7 +95,7 @@ export default function FaucetPage() {
 
                 <button 
                 className={`btn gap-2 text-lg transition-transform btn-primary hover:scale-105
-                    ${isRolling ? 'btn-disabled' : ''}`}
+                    ${(nextRoll && (isRolling || nextRollDisplay > 0)) ? 'btn-disabled' : ''}`}
                 onClick={()=>handleRoll()}
                 >
                 <AutoRenewIcon className={`${isRolling ? 'loading  loading-infinity loading-lg' : ''}`} />
@@ -86,7 +104,6 @@ export default function FaucetPage() {
             </div>
             </div>
         </div>
-
         {/* Additional Info */}
         {/* <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="card bg-base-200">
