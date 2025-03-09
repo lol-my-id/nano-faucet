@@ -1,9 +1,9 @@
 "use client"
-export interface ReferralData {
-    link: string;
-    earnings: number;
-    total: number;
-    claim: number;
+export interface ReferralSystemData {
+    url: string;
+    usersReferred: number;
+    totalEarned: number;
+    availableToClaim: number;
 }
 
 // Dumb API but I can't be bothered to update it, source remains closed for now
@@ -13,5 +13,6 @@ export interface FaucetResponse {
 }
 
 export interface NextRollData {
-    date: number; // How many seconds from now?
+    lastDate: number;
+    claimTimeout: number; 
 }

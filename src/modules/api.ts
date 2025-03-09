@@ -1,6 +1,6 @@
 "use client"
 
-import { FaucetResponse, NextRollData, ReferralData } from "../types/api";
+import { FaucetResponse, NextRollData, ReferralSystemData } from "../types/api";
 const API_URL = process.env.WAKU_PUBLIC_API_URL;
 
 function invoke(method: string, endpoint: string, body?: any, headers?: any): Promise<Response> {
@@ -17,7 +17,7 @@ function invoke(method: string, endpoint: string, body?: any, headers?: any): Pr
 
 export function useFaucet(address: string, captcha: string, referral?: string): Promise<FaucetResponse> {
     return new Promise((resolve, reject) => {
-        invoke('GET', `faucet/${address}`, {}, { hc: captcha, ref: referral }).then(r => {
+        invoke('GET', `faucet/${address}`, {}, { captcha, ref: referral }).then(r => {
             if(r.ok) {
                 r.json().then(data => resolve(data as FaucetResponse));
                 return;
@@ -28,18 +28,19 @@ export function useFaucet(address: string, captcha: string, referral?: string): 
     });
 }
 
-export function getReferralData(address: string): Promise<ReferralData> {
+export function getReferralData(address: string): Promise<ReferralSystemData> {
     return new Promise((resolve, reject) => {
         invoke('GET', `ref/${address}`).then(r => r.json()).then(data => {
             if (data == undefined) return reject();
-            resolve(data as ReferralData);
+            resolve(data as ReferralSystemData);
         }).catch(() => reject());
     });
 }
 
 export function getNextRollData(address: string): Promise<NextRollData> {
     return new Promise((resolve, reject) => {
-        invoke('GET', `when/${address}`).then(r => r.json()).then(data => {
+        invoke('GET', `faucet/${address}/when`).then(r => r.json()).then(data => {
+            console.log(data);
             if (data == undefined) return reject();
             resolve(data as NextRollData);
         }).catch(() => reject());
@@ -48,6 +49,6 @@ export function getNextRollData(address: string): Promise<NextRollData> {
 
 export function claimReferral(address: string, captcha: string): Promise<boolean> {
     return new Promise((resolve, reject) => {
-        invoke('POST', `claim/${address}`, { hc: captcha }).then(r => r.json()).then(()=>resolve(true)).catch(() => reject());
+        invoke('POST', `ref/${address}/claim`, {}, { captcha }).then(r => r.json()).then(()=>resolve(true)).catch(() => reject());
     });
 }
