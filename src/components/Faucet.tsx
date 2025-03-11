@@ -15,7 +15,7 @@ import { useAtom } from 'jotai';
 export default function FaucetPage() {
     // Doesn't feel right to do it this way
     const [[currency], [address]] = [useAtom(currencyAtom), useAtom(addressAtom)];
-    const [nextRoll] = useAtom(nextRollAtom);
+    const [nextRoll, setNextRoll] = useAtom(nextRollAtom);
 
     const raffleRef = useRef<{ isRolling: () => boolean, roll: () => void } | null>(null);
     const [isRolling, setIsRolling] = useState(false);
@@ -30,13 +30,19 @@ export default function FaucetPage() {
         }
 
         if(!raffleRef.current) return;
-
         if(raffleRef.current.isRolling()) return;
         raffleRef.current.roll();
         
         useFaucet(address ?? "", token ?? "", refLink).then((data) => {
             setIsRolling(false);
-            cToast.success(`You won ${data.prize} ${currency}`);
+            setNextRoll({
+                lastDate: Date.now(),
+                claimTimeout: nextRoll?.claimTimeout ?? 45 * 60
+            });
+            
+            setTimeout(() => {
+                cToast.success(`You won ${data.prize} ${currency}`);
+            }, 2500);
         }).catch((data: string) => {
             setIsRolling(false);
             cToast.error(data);
@@ -60,18 +66,18 @@ export default function FaucetPage() {
 
         setNextRollDisplay(nextRollTime);
 
-        const timer = setInterval(() => {
-            setNextRollDisplay(prev => {
-                if (prev <= 0) {
-                    clearInterval(timer);
-                    return 45 * 60; // Reset to 45 minutes if needed
-                }
-                return prev - 1;
-            });
-        }, 1000);
-    
-        // Cleanup function to clear the interval
-        return () => clearInterval(timer);
+        if(nextRollTime > 0) {
+            const timer = setInterval(() => {
+                setNextRollDisplay(prev => {
+                    if (prev <= 0) {
+                        clearInterval(timer);
+                        return 45 * 60; // Reset to 45 minutes if needed
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+            return () => clearInterval(timer);
+        }
     }, [nextRoll]); // Add nextRollDisplay to the dependency array
     
     return (
