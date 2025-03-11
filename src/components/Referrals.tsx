@@ -17,7 +17,7 @@ const Referrals: React.FC = () => {
     const [isClaiming, setIsClaiming] = useState(false);
     const [[currency], [address]] = [useAtom(currencyAtom), useAtom(addressAtom)];
 
-    const [referralData] = useAtom(referralDataAtom);
+    const [referralData, setReferralData] = useAtom(referralDataAtom);
 
     const captchaRef = useRef<HCaptcha>(null);
     
@@ -31,7 +31,8 @@ const Referrals: React.FC = () => {
         claimReferral(address ?? "", token).then(data =>{
             setIsClaiming(false);
             if(data == undefined) return;
-            cToast.success("Referral earnings claimed successfully, in case of any issues contact nx2 on Discord");
+            cToast.success("Referral earnings claimed successfully");
+            if(referralData) setReferralData({ ...referralData, availableToClaim: 0 })
         }).catch((err) => {
             setIsClaiming(false);
             cToast.error("Failed to claim referral earnings");

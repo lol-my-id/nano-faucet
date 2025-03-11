@@ -35,10 +35,7 @@ export default function FaucetPage() {
         
         useFaucet(address ?? "", token ?? "", refLink).then((data) => {
             setIsRolling(false);
-            setNextRoll({
-                lastDate: Date.now(),
-                claimTimeout: nextRoll?.claimTimeout ?? 45 * 60
-            });
+            if(nextRoll) setNextRoll({ ...nextRoll, lastDate: Date.now() });
             
             setTimeout(() => {
                 cToast.success(`You won ${data.prize} ${currency}`);
