@@ -90,7 +90,7 @@ export default function FaucetPage() {
             </h2>
 
             {/* Rolling Animation */}
-            <RaffleRoller ref={raffleRef} targetIndex={40} duration={1000} cards={["images/favicon.png","images/favicon.png","images/favicon.png"]} />
+            <RaffleRoller ref={raffleRef} targetIndex={10} duration={3000} cards={[`images/${currency.toLowerCase()}.png`]} />
 
             {/* Captcha & Roll Button */}
             <div className="flex flex-col gap-4 w-full max-w-md">
@@ -107,48 +107,6 @@ export default function FaucetPage() {
             </div>
             </div>
         </div>
-        {/* Additional Info */}
-        {/* <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="card bg-base-200">
-            <div className="card-body">
-                <h3 className="card-title"><ScheduleIcon /> Recent Wins</h3>
-                <div className="space-y-2">
-                <div className="flex justify-between">
-                    <span>🎉 User123</span>
-                    <span className="text-primary">0.45 NANO</span>
-                </div>
-                <div className="flex justify-between">
-                    <span>🎁 CryptoFan</span>
-                    <span className="text-primary">12 XDG</span>
-                </div>
-                </div>
-            </div>
-            </div>
-
-            <div className="card bg-base-200">
-            <div className="card-body">
-                <h3 className="card-title">💡 Pro Tip</h3>
-                <p>Bookmark this page and set a timer to maximize your earnings!</p>
-                <div className="stats stats-hoverable mt-4">
-                <div className="stat">
-                    <div className="stat-title">Your Today's Earnings</div>
-                    <div className="stat-value text-primary">0.89 XNO</div>
-                </div>
-                </div>
-            </div>
-            </div>
-
-            <div className="card bg-base-200">
-            <div className="card-body">
-                <h3 className="card-title">⚡ Instant Payouts</h3>
-                <ul className="list-disc pl-4 space-y-2">
-                <li>No minimum withdrawal</li>
-                <li>Direct to your wallet</li>
-                <li>Supports NANO/XDG/BAN</li>
-                </ul>
-            </div>
-            </div>
-        </div> */}
         </div>
     );
 }
