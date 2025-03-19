@@ -90,7 +90,7 @@ export default function FaucetPage() {
             </h2>
 
             {/* Rolling Animation */}
-            <RaffleRoller ref={raffleRef} targetIndex={10} duration={3000} cards={[`images/${currency.toLowerCase()}.png`]} />
+            <RaffleRoller ref={raffleRef} targetIndex={10} duration={3000} cards={[`images/cards/${currency.toLowerCase()}.png`]} />
 
             {/* Captcha & Roll Button */}
             <div className="flex flex-col gap-4 w-full max-w-md">
