@@ -49,7 +49,10 @@ const CardRoller: React.FC<CardRollerProps> = ({
 
   // Preload images
   useEffect(() => {
+    let isCancelled = false; // cancellation flag
+
     const loadImages = async () => {
+      console.log("Loading images...");
       const images = await Promise.all(
         cards.map(src =>
           new Promise<HTMLImageElement>((resolve) => {
@@ -61,10 +64,18 @@ const CardRoller: React.FC<CardRollerProps> = ({
           })
         )
       );
-      setLoadedImages(images);
+      if (!isCancelled) {
+        setLoadedImages(images);
+      }
     };
+
     loadImages();
-  }, [cards]);
+
+    // Cleanup function sets the flag to true on unmount
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
 
   // Setup canvas with device pixel ratio support
   const setupCanvas = useCallback(() => {
