@@ -1,4 +1,3 @@
-"use client"
 import { Layout } from "../components/Layout";
 
 export default function HomePage() {
@@ -6,3 +5,9 @@ export default function HomePage() {
     <Layout />
   );
 }
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  } as const;
+};
