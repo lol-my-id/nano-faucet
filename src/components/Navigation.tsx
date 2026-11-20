@@ -1,82 +1,42 @@
 "use client"
-import React, { useState } from 'react';
 
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import HomeIcon from '@mui/icons-material/Home';
 import WaterDropIcon from '@mui/icons-material/WaterDrop';
 import PeopleIcon from '@mui/icons-material/People';
-import NanoAddressModal from './ConnectWalletModal';
-import { PROTECTED_TABS, validateNanoAddress } from '../modules/utils';
-import { cToast } from './Toast';
-import { useAtom } from 'jotai';
-import { addressAtom } from '../contexts/Provider';
 
 interface NavigationProps {
     activeTab: string;
-    setActiveTab: (tab: string) => void;
+    onNavigate: (tab: string) => void;
 }
 
-export const Navigation = (props: NavigationProps) => {
-    const { activeTab } = props;
-    const [isCWMOpen, setIsCWMOpen] = useState(false);
-    const [address] = useAtom(addressAtom);
+const tabs = [
+    { id: 'home', label: 'Home', Icon: HomeIcon },
+    { id: 'faucet', label: 'Faucet', Icon: WaterDropIcon },
+    { id: 'referrals', label: 'Referrals', Icon: PeopleIcon },
+] as const;
 
-    const switchTab = (tab: string) => {
-        const isValid = validateNanoAddress(address || "");
-
-        if(PROTECTED_TABS.includes(tab) && !isValid) {
-            cToast.error("Please connect your wallet first");
-            setIsCWMOpen(true);
-            return;
-        }
-
-        window.location.hash = tab;
-    }
-
-
-    const openCWM = () => {
-        setIsCWMOpen(true);
-    };
-
+export const Navigation = ({ activeTab, onNavigate }: NavigationProps) => {
     return (
-        <>
-        {isCWMOpen && <NanoAddressModal setVisible={setIsCWMOpen} />}
-        <div className="join join-horizontal bg-base-100 rounded-full shadow-lg">
-        <button 
-        className={`join-item btn ${activeTab === 'home' ? 'btn-active' : ''}`}
-        onClick={() => switchTab('home')}
-        >
-        <HomeIcon className="mr-2" />
-        Home
-        </button>
-        
-        <button 
-        className={`join-item btn ${activeTab === 'faucet' ? 'btn-active' : ''}`}
-        onClick={() => switchTab('faucet')}
-        >
-        <WaterDropIcon className="mr-2" />
-        Faucet
-        </button>
-        
-        <button 
-        className={`join-item btn ${activeTab === 'referrals' ? 'btn-active' : ''}`}
-        onClick={() => switchTab('referrals')}
-        >
-        <PeopleIcon className="mr-2" />
-        Referrals
-        </button>
-
-        {/* Connect Wallet Button */}
-        <div className="join-item">
-        <button 
-            className="btn btn-primary rounded-full"
-            onClick={openCWM}
-        >
-            <AccountBalanceWalletIcon className="mr-2" />
-            Connect
-        </button>
-        </div>
-    </div>
-    </>
+        <nav aria-label="Primary" className="flex flex-1 items-center justify-center sm:flex-none">
+            {tabs.map(({ id, label, Icon }) => {
+                const active = activeTab === id;
+                return (
+                    <button
+                        key={id}
+                        type="button"
+                        aria-current={active ? 'page' : undefined}
+                        onClick={() => onNavigate(id)}
+                        className={`flex h-9 items-center gap-1.5 border-b-2 px-2.5 text-[13px] font-semibold transition-colors sm:h-10 sm:px-3 sm:text-sm ${
+                            active
+                                ? 'border-primary text-base-content'
+                                : 'border-transparent text-base-content/60 hover:text-base-content'
+                        }`}
+                    >
+                        <Icon sx={{ fontSize: 16 }} />
+                        <span>{label}</span>
+                    </button>
+                );
+            })}
+        </nav>
     );
 };

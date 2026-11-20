@@ -38,7 +38,6 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
                 } // No Toast since that probably means the user is first time user
         
                 // Handle next roll data
-                console.log("nextRollData", nextRollData);
                 if (nextRollData.status === 'fulfilled') {
                     setNextRoll(nextRollData.value);
                 } else cToast.error("Failed to fetch next roll data");

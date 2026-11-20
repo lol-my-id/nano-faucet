@@ -9,8 +9,11 @@ type RootLayoutProps = { children: ReactNode };
 export default async function RootLayout({ children }: RootLayoutProps) {
   return (
     <>
-    <title>{process.env.WAKU_PUBLIC_DOMAIN}</title>
+    <title>{`${process.env.WAKU_PUBLIC_DOMAIN ?? "NANO Faucet"} · Anonymous NANO Faucet`}</title>
     <link rel="icon" type="image/png" href="/images/favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+    <meta name="theme-color" content="#070c14" />
     <meta name="title" content={`${process.env.WAKU_PUBLIC_DOMAIN} - The coolest anonymous NANO Faucet!`} />
     <meta name="description" content={`${process.env.WAKU_PUBLIC_DOMAIN} is the top anonymous NANO faucet, offering free NANO cryptocurrency with no identity required. Claim your NANO securely and privately today!`} />
     <meta name="keywords" content="nano, crypto, faucet, NANO cryptocurrency, Anonymous faucets, Free NANO, Crypto giveaways, Digital currencies, Online transactions, Fast and secure payouts, User privacy, Decentralized finance, Crypto rewards, Blockchain technology, Anonymous transactions, Crypto wallets, Instant transfers, No KYC" />

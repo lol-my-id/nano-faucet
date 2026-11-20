@@ -1,91 +1,130 @@
 "use client"
 
-// IMPORTANT: Never deep import from MUI icons, it will break dev.
 import GitHubIcon from '@mui/icons-material/GitHub';
-import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import BoltIcon from '@mui/icons-material/Bolt';
 import BlockIcon from '@mui/icons-material/Block';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
-export default function HomePage() {
-    const features = [
+interface HomePageProps {
+    onStart: () => void;
+}
+
+export default function HomePage({ onStart }: HomePageProps) {
+    const currencies = [
+      { name: "XNO", src: "/images/cards/xno.png" },
+      { name: "XDG", src: "/images/cards/xdg.png" },
+      { name: "BAN", src: "/images/cards/ban.png" }
+    ];
+
+    const details = [
       {
-        icon: <AccessTimeIcon />,
-        title: "45-Minute Spins",
-        description: "Spin every 45 minutes with your wallet address to earn throughout the day"
+        Icon: AccessTimeIcon,
+        title: "45-minute cooldown",
+        description: "One spin per wallet address. The remaining time is shown on the faucet page."
       },
       {
-        icon: <BlockIcon />,
-        title: "No Ads",
-        description: "Enjoy an ad-free experience while you earn cryptocurrency"
+        Icon: BoltIcon,
+        title: "Instant payouts",
+        description: "Your prize is sent to your wallet as soon as the reel finishes."
       },
       {
-        icon: <BoltIcon />,
-        title: "Instant Payouts",
-        description: "Receive your rewards directly in your wallet immediately after spinning"
+        Icon: SportsEsportsIcon,
+        title: "Reward tiers",
+        description: "Card brightness shows the payout size. The blue card is the top prize."
       },
       {
-        icon: <VisibilityIcon />,
-        title: "100% Anonymous",
-        description: "No personal information required - complete privacy guaranteed"
+        Icon: BlockIcon,
+        title: "No ads",
+        description: "No advertising, pop-ups, or sponsored third-party scripts."
       },
       {
-        icon: <SportsEsportsIcon />,
-        title: "CS2-Inspired",
-        description: "Fun case-opening mechanic similar to Counter-Strike 2"
+        Icon: VisibilityIcon,
+        title: "No personal details",
+        description: "A Nano, DogeNano, or Banano address is all the faucet needs."
       },
       {
-        icon: <ThumbUpIcon />,
-        title: "User-Friendly",
-        description: "Simple interface that lets you start earning with just a few clicks"
+        Icon: AccountBalanceWalletIcon,
+        title: "Three currencies",
+        description: "Claim free XNO, XDG, or BAN with the matching wallet prefix."
       }
     ];
-  
+
     return (
       <div className="flex flex-col gap-8">
-        {/* Hero Section */}
-        <div className="hero bg-base-100 rounded-xl p-6 py-0">
-          <div className="hero-content text-center">
-            <div className="max-w-4xl">
-              <h1 className="text-5xl font-bold pt-2">
-                <span className="text-primary">{process.env.WAKU_PUBLIC_DOMAIN ?? "NANO Faucet"}</span>
-                <div className="text-xl mt-2 opacity-70">
-                  Earn XNO, XDG, and BAN instantly!
-                </div>
-              </h1>
-              
-              <p className="py-6 text-lg">
-                Experience the thrill of CS2-style case opening combined with instant cryptocurrency payouts. 
-                The 100% anonymous platform lets you earn with just a few clicks - no personal info required!
+        <section className="mx-auto flex max-w-2xl flex-col items-center pt-2 text-center sm:pt-4">
+          <h1 className="text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">
+            <span className="text-primary">{process.env.WAKU_PUBLIC_DOMAIN ?? "NANO Faucet"}</span>
+          </h1>
+          <p className="mt-2 text-lg font-bold text-base-content/85 sm:text-xl">
+            Earn cryptocurrency instantly.
+          </p>
+
+          <div className="mt-3.5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+            {currencies.map(({ name, src }) => (
+              <span
+                key={name}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-base-content/60"
+              >
+                <img
+                  src={src}
+                  alt=""
+                  className="h-5 w-5 rounded-full object-cover ring-1 ring-white/10"
+                  draggable={false}
+                />
+                {name}
+              </span>
+            ))}
+          </div>
+
+          <p className="mt-3.5 text-sm leading-6 text-base-content/55 sm:text-[15px]">
+            Spin the reward reel with your wallet address and receive free
+            cryptocurrency right away. No account and no personal details.
+          </p>
+
+          <div className="mt-6 flex justify-center">
+            <button
+              type="button"
+              onClick={onStart}
+              className="btn btn-primary h-11 min-h-11 gap-2 rounded-lg px-5 text-sm font-semibold"
+            >
+              Open the faucet
+              <ArrowForwardIcon sx={{ fontSize: 17 }} />
+            </button>
+          </div>
+
+          <p className="mt-3 text-xs text-base-content/45">
+            Free to use. No deposits, no wagering.
+          </p>
+        </section>
+
+        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {details.map(({ Icon, title, description }) => (
+            <div
+              key={title}
+              className="rounded-lg border border-white/[0.06] bg-base-200/55 p-4 transition-colors duration-150 hover:border-white/[0.12] hover:bg-base-200"
+            >
+              <Icon sx={{ fontSize: 18 }} className="text-primary/80" />
+              <h2 className="mt-2.5 text-sm font-semibold">{title}</h2>
+              <p className="mt-1 text-[13px] leading-5 text-base-content/50">
+                {description}
               </p>
             </div>
-          </div>
-        </div>
-  
-        {/* Features Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mt-0">
-          {features.map((feature, index) => (
-            <div key={index} className="card bg-base-200 hover:bg-base-300 transition-all">
-              <div className="card-body">
-                <div className="text-2xl text-primary mb-2">{feature.icon}</div>
-                <h3 className="card-title">{feature.title}</h3>
-                <p className="opacity-80">{feature.description}</p>
-              </div>
-            </div>
           ))}
-        </div>
-  
-        {/* Social Links */}
-        <div className="flex justify-center gap-6 mt-8">
+        </section>
+
+        <div className="flex justify-center">
           <a
-            href="https://github.com/nextu1337"
+            href="https://github.com/lol-my-id/nano-faucet"
             target="_blank"
             rel="noopener noreferrer"
-            className="btn btn-ghost btn-circle text-2xl hover:text-primary"
+            className="inline-flex items-center gap-2 text-xs font-semibold text-base-content/50 transition-colors hover:text-base-content/80"
           >
-            <GitHubIcon fontSize="inherit" />
+            <GitHubIcon sx={{ fontSize: 16 }} />
+            View the source on GitHub
           </a>
         </div>
       </div>

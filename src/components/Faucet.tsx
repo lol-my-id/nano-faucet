@@ -1,112 +1,240 @@
 "use client"
-import AutoRenewIcon from '@mui/icons-material/Autorenew';
 
-import { useState, useEffect, useRef } from "react";
+import AutoRenewIcon from '@mui/icons-material/Autorenew';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+
+import { useCallback, useEffect, useRef, useState } from "react";
 import HCaptchaComponent from './HCaptcha';
 import HCaptcha from '@hcaptcha/react-hcaptcha';
 import { useFaucet } from '../modules/api';
-import { formatTime } from '../modules/utils';
+import {
+    formatAmount,
+    formatTime,
+    getPrizeTier,
+    REEL_TIER_COUNT,
+    reelTierFilter,
+    shortAddress,
+} from '../modules/utils';
 import { cToast } from './Toast';
-import RaffleRoller from './RaffleRoller';
-import Card from './Card';
+import RaffleRoller, { RaffleRollerHandle } from './RaffleRoller';
 import { addressAtom, currencyAtom, nextRollAtom } from '../contexts/Provider';
 import { useAtom } from 'jotai';
 
+interface LastPrize {
+    amount: string;
+    currency: string;
+    tier: number;
+}
+
 export default function FaucetPage() {
-    // Doesn't feel right to do it this way
-    const [[currency], [address]] = [useAtom(currencyAtom), useAtom(addressAtom)];
+    const [currency] = useAtom(currencyAtom);
+    const [address] = useAtom(addressAtom);
     const [nextRoll, setNextRoll] = useAtom(nextRollAtom);
 
-    const raffleRef = useRef<{ isRolling: () => boolean, roll: () => void } | null>(null);
+    const raffleRef = useRef<RaffleRollerHandle | null>(null);
     const [isRolling, setIsRolling] = useState(false);
     const [nextRollDisplay, setNextRollDisplay] = useState(0);
+    const [lastPrize, setLastPrize] = useState<LastPrize | null>(null);
     const [refLink, setRefLink] = useState("");
     const captchaRef = useRef<HCaptcha>(null);
 
-    const handleRoll = (token?: string) => {
+    const handleRoll = useCallback(async (token?: string) => {
+        if (isRolling) return;
+
         if (!token || typeof token !== 'string' || token.length === 0) {
+            if (nextRollDisplay > 0) return;
             captchaRef.current?.execute();
             return;
         }
 
-        if(!raffleRef.current) return;
-        if(raffleRef.current.isRolling()) return;
-        raffleRef.current.roll();
-        
-        useFaucet(address ?? "", token ?? "", refLink).then((data) => {
+        const roller = raffleRef.current;
+        if (!roller || roller.isRolling()) return;
+
+        setIsRolling(true);
+        setLastPrize(null);
+        roller.start();
+
+        try {
+            const data = await useFaucet(address ?? "", token, refLink);
+            const tier = getPrizeTier(data.prize, data.winnings);
+
+            // The reel keeps spinning until the request settles, then lands
+            // on the card that matches the payout size.
+            await roller.land(tier);
+
+            const amount = formatAmount(data.prize);
+            setLastPrize({ amount, currency, tier });
+            setNextRoll({
+                lastDate: Date.now(),
+                claimTimeout: nextRoll?.claimTimeout ?? 45 * 60,
+            });
+            cToast.success(`Received ${amount} ${currency}`);
+        } catch (error) {
+            roller.reset();
+            const message = typeof error === "string" && error.trim().length > 0
+                ? error.trim()
+                : "Couldn't reach the faucet. Try again in a moment.";
+            cToast.error(message);
+        } finally {
             setIsRolling(false);
-            if(nextRoll) setNextRoll({ ...nextRoll, lastDate: Date.now() });
-            
-            setTimeout(() => {
-                cToast.success(`You won ${data.prize} ${currency}`);
-            }, 2500);
-        }).catch((data: string) => {
-            setIsRolling(false);
-            cToast.error(data);
-        });
-    };
+        }
+    }, [address, currency, isRolling, nextRoll, nextRollDisplay, refLink, setNextRoll]);
 
     useEffect(() => {
-        const lRefLink = localStorage.getItem("ref");
-        if (lRefLink) setRefLink(lRefLink);
+        const storedRef = localStorage.getItem("ref");
+        if (storedRef) setRefLink(storedRef);
     }, []);
 
-    // Countdown timer
+    // Recalculate from the timestamp on every tick so the countdown stays
+    // correct after tab throttling or sleep.
     useEffect(() => {
-        if (!nextRoll) return;
-
-        const now = new Date().getTime();
-        const last = new Date(nextRoll.lastDate).getTime();
-
-        const diff = now - last;
-        const nextRollTime = nextRoll.claimTimeout - Math.floor(diff/1000);
-
-        setNextRollDisplay(nextRollTime);
-
-        if(nextRollTime > 0) {
-            const timer = setInterval(() => {
-                setNextRollDisplay(prev => {
-                    if (prev <= 0) {
-                        clearInterval(timer);
-                        return 45 * 60; // Reset to 45 minutes if needed
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
-            return () => clearInterval(timer);
+        if (!nextRoll) {
+            setNextRollDisplay(0);
+            return;
         }
-    }, [nextRoll]); // Add nextRollDisplay to the dependency array
-    
+
+        const tick = () => {
+            const last = new Date(nextRoll.lastDate).getTime();
+            const elapsed = Math.floor((Date.now() - last) / 1000);
+            setNextRollDisplay(Math.max(0, nextRoll.claimTimeout - elapsed));
+        };
+
+        tick();
+        const timer = setInterval(tick, 1000);
+        return () => clearInterval(timer);
+    }, [nextRoll]);
+
+    const coolingDown = nextRollDisplay > 0;
+    const rollDisabled = isRolling || coolingDown;
+    const rollLabel = isRolling
+        ? "Spinning…"
+        : coolingDown
+            ? `Next spin in ${formatTime(nextRollDisplay)}`
+            : "Spin now";
+
+    const statusText = isRolling
+        ? "Spinning"
+        : coolingDown
+            ? `Next spin in ${formatTime(nextRollDisplay)}`
+            : "Ready to spin";
+
+    const cardImage = `/images/cards/${currency.toLowerCase()}.png`;
+
     return (
-        <div className="flex flex-col gap-8 animate-fade-in">
-        {/* Main Roll Section */}
-        <div className="hero bg-base-100 rounded-xl overflow-x-auto p-6">
-            <div className="hero-content text-center w-full flex flex-col gap-6">
-            <h2 className="text-4xl font-bold">
-                <span className="text-primary">Faucet</span>
-                {nextRoll && <div className="text-lg mt-2 opacity-70">
-                Spin every 45 minutes - Next spin in: {nextRollDisplay > 0 ? formatTime(nextRollDisplay) : "Available"}
-                </div>}
-            </h2>
+        <div className="flex flex-col gap-5 sm:gap-6">
+            <header className="mx-auto max-w-xl text-center">
+                <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Faucet</h1>
+                <p className="mt-1.5 text-sm leading-6 text-base-content/55">
+                    One spin every 45 minutes. Prizes are sent to your wallet as
+                    soon as the reel stops.
+                </p>
+            </header>
 
-            {/* Rolling Animation */}
-            <RaffleRoller ref={raffleRef} targetIndex={10} duration={3000} cards={[`images/cards/${currency.toLowerCase()}.png`]} />
+            <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-[13px] text-base-content/55">
+                <span>
+                    Wallet{' '}
+                    <span className="font-mono text-base-content/75">
+                        {shortAddress(address, 6)}
+                    </span>
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                    Currency{' '}
+                    <img
+                        src={cardImage}
+                        alt=""
+                        className="h-4 w-4 rounded-full object-cover"
+                        draggable={false}
+                    />
+                    <span className="font-semibold text-base-content/75">{currency}</span>
+                </span>
+                <span
+                    className={
+                        isRolling
+                            ? 'text-primary'
+                            : coolingDown
+                                ? 'text-base-content/55'
+                                : 'text-success'
+                    }
+                >
+                    {statusText}
+                </span>
+            </div>
 
-            {/* Captcha & Roll Button */}
-            <div className="flex flex-col gap-4 w-full max-w-md">
+            <section className="rounded-lg border border-white/[0.07] bg-base-200/55 p-3 sm:p-4">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <h2 className="text-sm font-semibold">Reward reel</h2>
+                    <p className="text-[11px] text-base-content/55">
+                        Brighter card = bigger payout
+                    </p>
+                </div>
+
+                <RaffleRoller
+                    ref={raffleRef}
+                    cards={[cardImage]}
+                />
+
+                <div className="mt-3 flex min-h-6 flex-wrap items-center justify-between gap-2">
+                    <div aria-live="polite">
+                        {lastPrize ? (
+                            <p className="text-sm text-base-content/70">
+                                Payout{' '}
+                                <strong className="font-semibold text-base-content">
+                                    {lastPrize.amount} {lastPrize.currency}
+                                </strong>
+                                {lastPrize.tier === REEL_TIER_COUNT - 1 && (
+                                    <span className="ml-2 text-xs font-semibold text-primary">
+                                        Top prize
+                                    </span>
+                                )}
+                            </p>
+                        ) : (
+                            <p className="text-[13px] text-base-content/55">
+                                {isRolling
+                                    ? "Waiting for the payout…"
+                                    : coolingDown
+                                        ? "Cooldown active."
+                                        : "Spin to see your payout."}
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-1" aria-hidden="true">
+                        {Array.from({ length: REEL_TIER_COUNT }, (_, tier) => (
+                            <img
+                                key={tier}
+                                src={cardImage}
+                                alt=""
+                                className="h-4 w-4 rounded-sm object-contain"
+                                style={{ filter: reelTierFilter(tier) }}
+                            />
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            <div className="mx-auto flex w-full max-w-sm flex-col gap-3">
                 <HCaptchaComponent onVerify={handleRoll} captchaRef={captchaRef} />
 
-                <button 
-                className={`btn gap-2 text-lg transition-transform btn-primary hover:scale-105
-                    ${(nextRoll && (isRolling || nextRollDisplay > 0)) ? 'btn-disabled' : ''}`}
-                onClick={()=>handleRoll()}
+                <button
+                    type="button"
+                    onClick={() => handleRoll()}
+                    disabled={rollDisabled}
+                    className="btn btn-primary h-11 min-h-11 w-full gap-2 rounded-lg text-sm font-semibold"
                 >
-                <AutoRenewIcon className={`${isRolling ? 'loading  loading-infinity loading-lg' : ''}`} />
-                {isRolling ? "ROLLING..." : "ROLL NOW"}
+                    {isRolling ? (
+                        <AutoRenewIcon className="animate-spin" sx={{ fontSize: 18 }} />
+                    ) : coolingDown ? (
+                        <ScheduleIcon sx={{ fontSize: 17 }} />
+                    ) : (
+                        <AutoRenewIcon sx={{ fontSize: 18 }} />
+                    )}
+                    {rollLabel}
                 </button>
+
+                <p className="text-center text-xs leading-5 text-base-content/50">
+                    Payout address: <span className="font-mono text-base-content/65">{shortAddress(address, 8)}</span>
+                </p>
             </div>
-            </div>
-        </div>
         </div>
     );
 }
