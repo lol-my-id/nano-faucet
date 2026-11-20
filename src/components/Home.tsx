@@ -116,15 +116,27 @@ export default function HomePage({ onStart }: HomePageProps) {
           ))}
         </section>
 
-        <div className="flex justify-center">
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs font-semibold">
+          <span className="inline-flex items-center gap-1.5 text-base-content/45">
+            <GitHubIcon sx={{ fontSize: 16 }} />
+            Source
+          </span>
           <a
             href="https://github.com/lol-my-id/nano-faucet"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-xs font-semibold text-base-content/50 transition-colors hover:text-base-content/80"
+            className="text-base-content/60 underline-offset-4 transition-colors hover:text-base-content hover:underline"
           >
-            <GitHubIcon sx={{ fontSize: 16 }} />
-            View the source on GitHub
+            Frontend
+          </a>
+          <span aria-hidden="true" className="text-base-content/20">·</span>
+          <a
+            href="https://github.com/lol-my-id/nano-faucet-backend"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-base-content/60 underline-offset-4 transition-colors hover:text-base-content hover:underline"
+          >
+            Backend
           </a>
         </div>
       </div>

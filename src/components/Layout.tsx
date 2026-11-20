@@ -159,7 +159,7 @@ export const Layout = () => {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                nx2
+                2xxn
               </a>
             </p>
           </div>
