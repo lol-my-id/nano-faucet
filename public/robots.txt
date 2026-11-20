@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /r/
+
+Sitemap: https://nano.lol.my.id/sitemap.xml

@@ -1,0 +1,28 @@
+# NANO Faucet
+
+> nano.lol.my.id is a free, anonymous Nano faucet. One spin every 45 minutes pays XNO, XDG (DogeNano), or BAN (Banano) directly to the wallet address saved in the browser.
+
+## Pages
+
+- [Home](https://nano.lol.my.id/): overview, features, and source links.
+- [Faucet](https://nano.lol.my.id/#faucet): connect a wallet and spin the reward reel.
+- [Referrals](https://nano.lol.my.id/#referrals): referral link, referral stats, and 20% earnings.
+
+## How it works
+
+- Save a supported wallet address: `nano_`, `xdg_`, or `ban_`.
+- One free spin is available per address every 45 minutes.
+- After a successful spin, the payout is sent to the wallet automatically.
+- Card brightness on the reel shows the payout tier. The blue card is the top prize.
+- Referrers earn 20% of the rewards paid to wallets they refer.
+
+## Source
+
+- [Frontend](https://github.com/lol-my-id/nano-faucet)
+- [Backend](https://github.com/lol-my-id/nano-faucet-backend)
+
+## Notes
+
+- No account, email address, personal information, or KYC is required.
+- The wallet address is stored locally in the browser.
+- Rewards are intentionally small. This is a faucet, not an exchange or casino.
