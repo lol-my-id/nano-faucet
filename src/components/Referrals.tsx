@@ -26,6 +26,7 @@ const MOCK_REFERRAL_DATA: ReferralSystemData = {
 
 const Referrals: React.FC = () => {
     const [isClaiming, setIsClaiming] = useState(false);
+    const [captchaPending, setCaptchaPending] = useState(false);
     const [copied, setCopied] = useState(false);
     const [previewData, setPreviewData] = useState(false);
     const [currency] = useAtom(currencyAtom);
@@ -33,6 +34,7 @@ const Referrals: React.FC = () => {
     const [referralData, setReferralData] = useAtom(referralDataAtom);
 
     const captchaRef = useRef<HCaptcha>(null);
+    const captchaPendingRef = useRef(false);
     const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
@@ -67,23 +69,33 @@ const Referrals: React.FC = () => {
         }
 
         if (!token || typeof token !== 'string' || token.length === 0) {
+            if (captchaPendingRef.current || isClaiming) return;
+            captchaPendingRef.current = true;
+            setCaptchaPending(true);
             captchaRef.current?.execute();
             return;
         }
+
+        captchaPendingRef.current = false;
+        setCaptchaPending(false);
 
         if (!referralData || referralData.availableToClaim <= 0 || isClaiming) return;
 
         setIsClaiming(true);
         claimReferral(address ?? "", token).then(() => {
-            setIsClaiming(false);
             cToast.success("Referral earnings claimed");
             setReferralData({ ...referralData, availableToClaim: 0 });
         }).catch((error) => {
-            setIsClaiming(false);
             const message = typeof error === "string" && error.trim().length > 0
                 ? error.trim()
                 : "Couldn't claim referral earnings";
             cToast.error(message);
+        }).finally(() => {
+            setIsClaiming(false);
+            captchaPendingRef.current = false;
+            setCaptchaPending(false);
+            // hCaptcha tokens are single-use; reset for the next claim.
+            captchaRef.current?.resetCaptcha();
         });
     };
 
@@ -165,19 +177,35 @@ const Referrals: React.FC = () => {
                             </p>
                         </div>
                         <div className="flex w-full flex-col gap-3 sm:w-56">
-                            <HCaptchaComponent onVerify={handleReferralClaim} captchaRef={captchaRef} />
+                            <HCaptchaComponent
+                                onVerify={handleReferralClaim}
+                                captchaRef={captchaRef}
+                                onClose={() => {
+                                    captchaPendingRef.current = false;
+                                    setCaptchaPending(false);
+                                }}
+                                onError={() => {
+                                    captchaPendingRef.current = false;
+                                    setCaptchaPending(false);
+                                    cToast.error("Captcha verification failed. Try again.");
+                                }}
+                                onExpire={() => {
+                                    captchaPendingRef.current = false;
+                                    setCaptchaPending(false);
+                                }}
+                            />
                             <button
                                 type="button"
-                                disabled={isClaiming || data.availableToClaim <= 0}
+                                disabled={isClaiming || captchaPending || data.availableToClaim <= 0}
                                 onClick={() => handleReferralClaim()}
                                 className="btn btn-secondary h-10 min-h-10 w-full gap-2 rounded-lg text-sm font-semibold"
                             >
-                                {isClaiming ? (
+                                {isClaiming || captchaPending ? (
                                     <span className="loading loading-spinner loading-xs" />
                                 ) : (
                                     <MonetizationOnIcon sx={{ fontSize: 17 }} />
                                 )}
-                                {isClaiming ? "Claiming…" : "Claim"}
+                                {isClaiming ? "Claiming…" : captchaPending ? "Verifying…" : "Claim"}
                             </button>
                         </div>
                     </section>

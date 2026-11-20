@@ -33,19 +33,30 @@ export default function FaucetPage() {
 
     const raffleRef = useRef<RaffleRollerHandle | null>(null);
     const [isRolling, setIsRolling] = useState(false);
-    const [nextRollDisplay, setNextRollDisplay] = useState(0);
+    const [captchaPending, setCaptchaPending] = useState(false);
     const [lastPrize, setLastPrize] = useState<LastPrize | null>(null);
     const [refLink, setRefLink] = useState("");
     const captchaRef = useRef<HCaptcha>(null);
+    const captchaPendingRef = useRef(false);
+    const [, setClockTick] = useState(0);
 
     const handleRoll = useCallback(async (token?: string) => {
         if (isRolling) return;
 
         if (!token || typeof token !== 'string' || token.length === 0) {
-            if (nextRollDisplay > 0) return;
+            const cooldownActive = nextRoll
+                ? nextRoll.claimTimeout - Math.floor((Date.now() - new Date(nextRoll.lastDate).getTime()) / 1000) > 0
+                : false;
+
+            if (captchaPendingRef.current || cooldownActive) return;
+            captchaPendingRef.current = true;
+            setCaptchaPending(true);
             captchaRef.current?.execute();
             return;
         }
+
+        captchaPendingRef.current = false;
+        setCaptchaPending(false);
 
         const roller = raffleRef.current;
         if (!roller || roller.isRolling()) return;
@@ -77,46 +88,52 @@ export default function FaucetPage() {
             cToast.error(message);
         } finally {
             setIsRolling(false);
+            captchaPendingRef.current = false;
+            setCaptchaPending(false);
+            // hCaptcha tokens are single-use; reset so the next spin works.
+            captchaRef.current?.resetCaptcha();
         }
-    }, [address, currency, isRolling, nextRoll, nextRollDisplay, refLink, setNextRoll]);
+    }, [address, currency, isRolling, nextRoll, refLink, setNextRoll]);
 
     useEffect(() => {
         const storedRef = localStorage.getItem("ref");
         if (storedRef) setRefLink(storedRef);
     }, []);
 
-    // Recalculate from the timestamp on every tick so the countdown stays
-    // correct after tab throttling or sleep.
+    // Re-render once a second while a cooldown is active. The remaining time
+    // itself is derived from the timestamp on render, so the button never
+    // briefly shows "Spin now" while the data is settling.
     useEffect(() => {
-        if (!nextRoll) {
-            setNextRollDisplay(0);
-            return;
-        }
-
-        const tick = () => {
-            const last = new Date(nextRoll.lastDate).getTime();
-            const elapsed = Math.floor((Date.now() - last) / 1000);
-            setNextRollDisplay(Math.max(0, nextRoll.claimTimeout - elapsed));
-        };
-
-        tick();
-        const timer = setInterval(tick, 1000);
+        if (!nextRoll) return;
+        const timer = setInterval(() => setClockTick((tick) => tick + 1), 1000);
         return () => clearInterval(timer);
     }, [nextRoll]);
 
+    const lastRollDate = nextRoll ? new Date(nextRoll.lastDate).getTime() : 0;
+    const nextRollDisplay = nextRoll
+        ? Math.min(
+            nextRoll.claimTimeout,
+            Math.max(0, nextRoll.claimTimeout - Math.floor((Date.now() - lastRollDate) / 1000)),
+        )
+        : 0;
+
     const coolingDown = nextRollDisplay > 0;
-    const rollDisabled = isRolling || coolingDown;
+    const rollDisabled = isRolling || captchaPending || coolingDown;
     const rollLabel = isRolling
         ? "Spinning…"
-        : coolingDown
-            ? `Next spin in ${formatTime(nextRollDisplay)}`
-            : "Spin now";
+        : captchaPending
+            ? "Verifying…"
+            : coolingDown
+                ? `Next spin in ${formatTime(nextRollDisplay)}`
+                : "Spin now";
 
-    const statusText = isRolling
-        ? "Spinning"
-        : coolingDown
-            ? `Next spin in ${formatTime(nextRollDisplay)}`
-            : "Ready to spin";
+    const statusText = captchaPending
+        ? "Verifying captcha"
+        : isRolling
+            ? "Spinning"
+            : coolingDown
+                ? `Next spin in ${formatTime(nextRollDisplay)}`
+                : "Ready to spin";
 
     const cardImage = `/images/cards/${currency.toLowerCase()}.png`;
 
@@ -149,7 +166,7 @@ export default function FaucetPage() {
                 </span>
                 <span
                     className={
-                        isRolling
+                        isRolling || captchaPending
                             ? 'text-primary'
                             : coolingDown
                                 ? 'text-base-content/55'
@@ -191,9 +208,11 @@ export default function FaucetPage() {
                             <p className="text-[13px] text-base-content/55">
                                 {isRolling
                                     ? "Waiting for the payout…"
-                                    : coolingDown
-                                        ? "Cooldown active."
-                                        : "Spin to see your payout."}
+                                    : captchaPending
+                                        ? "Waiting for captcha verification…"
+                                        : coolingDown
+                                            ? "Cooldown active."
+                                            : "Spin to see your payout."}
                             </p>
                         )}
                     </div>
@@ -213,7 +232,23 @@ export default function FaucetPage() {
             </section>
 
             <div className="mx-auto flex w-full max-w-sm flex-col gap-3">
-                <HCaptchaComponent onVerify={handleRoll} captchaRef={captchaRef} />
+                <HCaptchaComponent
+                    onVerify={handleRoll}
+                    captchaRef={captchaRef}
+                    onClose={() => {
+                        captchaPendingRef.current = false;
+                        setCaptchaPending(false);
+                    }}
+                    onError={() => {
+                        captchaPendingRef.current = false;
+                        setCaptchaPending(false);
+                        cToast.error("Captcha verification failed. Try again.");
+                    }}
+                    onExpire={() => {
+                        captchaPendingRef.current = false;
+                        setCaptchaPending(false);
+                    }}
+                />
 
                 <button
                     type="button"
@@ -221,7 +256,7 @@ export default function FaucetPage() {
                     disabled={rollDisabled}
                     className="btn btn-primary h-11 min-h-11 w-full gap-2 rounded-lg text-sm font-semibold"
                 >
-                    {isRolling ? (
+                    {isRolling || captchaPending ? (
                         <AutoRenewIcon className="animate-spin" sx={{ fontSize: 18 }} />
                     ) : coolingDown ? (
                         <ScheduleIcon sx={{ fontSize: 17 }} />

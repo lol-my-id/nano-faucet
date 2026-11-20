@@ -2,16 +2,21 @@
 
 import { FaucetResponse, NextRollData, ReferralSystemData } from "../types/api";
 const API_URL = process.env.WAKU_PUBLIC_API_URL;
+const REQUEST_TIMEOUT_MS = 45000;
 
 function invoke(method: string, endpoint: string, body?: any, headers?: any): Promise<Response> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
     return fetch(`${API_URL}/${endpoint}`, {
         method,
         headers: {
             'Content-Type': 'application/json',
             ...(headers ?? {})
         },
-        body: method != "GET" ? JSON.stringify(body) : null
-    });
+        body: method != "GET" ? JSON.stringify(body) : null,
+        signal: controller.signal
+    }).finally(() => clearTimeout(timeout));
 }
 
 async function errorMessage(response: Response, fallback: string) {
@@ -28,7 +33,10 @@ async function errorMessage(response: Response, fallback: string) {
                 FAILED: "The faucet couldn't complete the payout. Try again in a moment.",
                 CAPTCHA: "Captcha verification failed. Try again.",
             };
-            return messages[code] ?? fallback;
+            if (messages[code]) return messages[code];
+            // Some backend errors are already human-readable sentences.
+            if (code && /\s/.test(code)) return code;
+            return fallback;
         } catch {
             return text;
         }
@@ -39,7 +47,9 @@ async function errorMessage(response: Response, fallback: string) {
 
 export function useFaucet(address: string, captcha: string, referral?: string): Promise<FaucetResponse> {
     return new Promise((resolve, reject) => {
-        invoke('GET', `faucet/${address}`, {}, { captcha, ref: referral })
+        const ref = referral?.trim();
+
+        invoke('GET', `faucet/${address}`, {}, { captcha, ...(ref ? { ref } : {}) })
             .then(async (response) => {
                 if (!response.ok) {
                     reject(await errorMessage(response, "Unable to claim from the faucet"));

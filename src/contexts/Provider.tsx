@@ -21,30 +21,49 @@ export const currencyAtom = atom<string>("XNO");
 
 // Provider component to initialize data
 export const DataProvider = ({ children }: { children: React.ReactNode }) => {
-    const [address, setAddress] = useAtom(addressAtom);
+    const [address] = useAtom(addressAtom);
     const [, setReferralData] = useAtom(referralDataAtom);
     const [, setNextRoll] = useAtom(nextRollAtom);
     const [, setCurrency] = useAtom(currencyAtom);
 
     useEffect(() => {
-        if (address && validateNanoAddress(address)) {
-            Promise.allSettled([
-                getReferralData(address),
-                getNextRollData(address)
-            ]).then(([referralData, nextRollData]) => {
-                // Handle referral data
-                if (referralData.status === 'fulfilled') {
-                    setReferralData(referralData.value);
-                } // No Toast since that probably means the user is first time user
-        
-                // Handle next roll data
-                if (nextRollData.status === 'fulfilled') {
-                    setNextRoll(nextRollData.value);
-                } else cToast.error("Failed to fetch next roll data");
-            });
-            setCurrency(getCurrencyFromAddress(address));
+        let cancelled = false;
+
+        // Never show one wallet's cooldown or referral balance for another
+        // wallet (or after disconnecting) while the new data is loading.
+        setReferralData(null);
+        setNextRoll(null);
+
+        if (!address || !validateNanoAddress(address)) {
+            setCurrency("XNO");
+            return () => {
+                cancelled = true;
+            };
         }
-    }, [address, setAddress, setReferralData, setNextRoll, setCurrency]);
+
+        setCurrency(getCurrencyFromAddress(address));
+
+        Promise.allSettled([
+            getReferralData(address),
+            getNextRollData(address)
+        ]).then(([referralData, nextRollData]) => {
+            if (cancelled) return;
+
+            if (referralData.status === 'fulfilled') {
+                setReferralData(referralData.value);
+            } // No toast: new users often have no referral record yet.
+
+            if (nextRollData.status === 'fulfilled') {
+                setNextRoll(nextRollData.value);
+            } else {
+                cToast.error("Failed to fetch next roll data");
+            }
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [address, setReferralData, setNextRoll, setCurrency]);
 
   return <>{children}</>;
 };
